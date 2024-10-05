@@ -16,6 +16,7 @@
 #include <wlr/backend/libinput.h>
 #include <wlr/render/allocator.h>
 #include <wlr/render/wlr_renderer.h>
+#include <wlr/render/android.h>
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_cursor_shape_v1.h>
@@ -2166,7 +2167,7 @@ run(char *startup_cmd)
 	const char *socket = wl_display_add_socket_auto(dpy);
 	if (!socket)
 		die("startup: display_add_socket_auto");
-	setenv("WAYLAND_DISPLAY", socket, 1);
+	setenv("WAYLAND_DISPLAY", socket, 0);
 
 	/* Start the backend. This will enumerate outputs and inputs, become the DRM
 	 * master, etc */
@@ -2411,11 +2412,17 @@ setup(void)
 	if (!(drw = wlr_renderer_autocreate(backend)))
 		die("couldn't create renderer");
 
+    struct wlr_egl *egl = wlr_android_renderer_get_egl(drw);
+    if (!egl) {
+        die("Couldn't get EGL");
+    }
+
 	/* Create shm, drm and linux_dmabuf interfaces by ourselves.
 	 * The simplest way is call:
 	 *      wlr_renderer_init_wl_display(drw);
 	 * but we need to create manually the linux_dmabuf interface to integrate it
 	 * with wlr_scene. */
+    wlr_android_renderer_init_wl_display(drw, dpy);
 	wlr_renderer_init_wl_shm(drw, dpy);
 
 	if (wlr_renderer_get_dmabuf_texture_formats(drw)) {
